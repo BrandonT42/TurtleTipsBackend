@@ -1,7 +1,11 @@
 {
   "name": "trtl-tips-backend",
   "version": "0.0.1",
-  "description": "TurtleTips backend",
+  "description": "TurtleTips Backend",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/BrandonT42/TurtleTipsBackend.git"
+  },
   "main": "index.js",
   "scripts": {
     "clean": "rm -rf \"./dist\" || true && mkdir \"./dist\"",
