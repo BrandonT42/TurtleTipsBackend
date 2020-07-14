@@ -1,0 +1,17 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+      "target": "es6",
+      "module": "commonjs",
+      "sourceMap": false,
+      "types": ["node"],
+      "typeRoots": ["node_modules/@types"],
+      "moduleResolution": "node",
+      "lib": ["es2017","dom"],
+      "resolveJsonModule": true,
+      "outDir": "dist",
+      "esModuleInterop": true
+    },
+    "include": ["./src/**/*.ts"],
+    "exclude": ["./src/**/*.test.ts","./src/public/"]
+  }
