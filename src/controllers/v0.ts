@@ -4,7 +4,6 @@ import * as helpers from "../lib/async";
 import * as http from "../lib/http";
 import { OK, BAD_REQUEST, NETWORK_AUTHENTICATION_REQUIRED } from 'http-status-codes';
 import { Request, Response } from 'express';
-import { Transaction } from 'turtlecoin-utils'
 import { Logger } from '@overnightjs/logger';
 import WalletScanner from '../Wallet';
 import { Sqlite } from "../Database";

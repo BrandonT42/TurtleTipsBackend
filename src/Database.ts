@@ -5,16 +5,20 @@ import * as Crypto from "turtlecoin-crypto";
 import { Logger } from "@overnightjs/logger";
 import { Constants } from "./Constants";
 
+// Sqlite database connection
 const DB = new Database(Config.Database);
 
+// Executes an SQL string without variables
 function Exec(Sql:string) {
     return DB.exec(Sql);
 }
 
+// Executes an SQL string with variables
 function Run(Sql:string, Data:any[]) {
     return DB.prepare(Sql).run(...Data);
 }
 
+// Inserts data into a table
 function Insert(TableName:string, Data:any) {
     if (!Array.isArray(Data)) Data = [Data];
     let Keys = Object.keys(Data[0]);
@@ -33,6 +37,7 @@ function Insert(TableName:string, Data:any) {
     return Run(Sql, Values);
 }
 
+// Replaces data within a table
 function Replace(TableName:string, Data:any) {
     if (!Array.isArray(Data)) Data = [Data];
     let Keys = Object.keys(Data[0]);
@@ -70,7 +75,9 @@ function Log(Message:string, Level?:string) {
     }
 }
 
+// Database handling wallet data
 export class Sqlite {
+    // Initializes database and creates tables if needed
     public static async Setup() {
         // Create tables
         Exec(Constants.BLOCK_TABLE);
@@ -103,6 +110,7 @@ export class Sqlite {
         Log("Database loaded");
     }
 
+    // Stores or replaces a pubkey
     public static async StorePubKey(PublicKey:string, NetworkHeight:number):Promise<boolean> {
         try {
             Replace(
@@ -120,6 +128,7 @@ export class Sqlite {
         }
     }
 
+    // Stores a transaction
     public static StoreTransaction(Transaction:any, Block:any, Outputs:any[]) {
         // Store block data
         try {
@@ -176,6 +185,7 @@ export class Sqlite {
         );
     }
 
+    // Stores current sync data
     public static async StoreSyncData(LastKnownBlockHeight:number, LastCheckpointHeight:number,
         Checkpoints:string[], SearcheSqlitelocks:string[]) {
         Run(
@@ -189,6 +199,7 @@ export class Sqlite {
         );
     }
 
+    // Stores or replaces a domain owner's pubkey
     public static async StoreDomainOwner(Domain:string, PublicKey:string):Promise<boolean> {
         // Try to store domain and pubkey, will fail if key isn't already registered
         //   or domain is already registered
@@ -207,6 +218,7 @@ export class Sqlite {
         }
     }
 
+    // Gets data from last sync
     public static async GetSyncData() {
         let SyncData = DB
             .prepare("SELECT * FROM sync LIMIT 1")
@@ -221,6 +233,7 @@ export class Sqlite {
         };
     }
 
+    // Gets all known pubkeys
     public static async GetPubKeys(Height:number):Promise<string[]> {
         return DB
             .prepare("SELECT pubkey FROM pubkeys WHERE creation_height <= ?")
@@ -228,6 +241,7 @@ export class Sqlite {
             .map(Row => Row["pubkey"]) as string[];
     }
 
+    // Checks a TXT record for pubkey information
     private static async StoreTxtRecord(Domain:string):Promise<string> {
         return new Promise(Resolve => {
             dns.resolveTxt(Domain, (_, Addresses) => {
@@ -255,6 +269,7 @@ export class Sqlite {
         });
     }
 
+    // Gets the pubkey belonging to a domain
     public static async GetDomainOwner(Domain:string):Promise<string> {
         return new Promise(async Resolve => {
             // Throws if there isn't a matching record
@@ -279,6 +294,7 @@ export class Sqlite {
         });
     }
 
+    // Checks if a pubkey is registered
     public static async CheckPubKeyExists(PublicKey:string) {
         try {
             let Value = DB
@@ -291,6 +307,7 @@ export class Sqlite {
         }
     }
 
+    // Gets sync data for a given pubkey within a range of heights
     public static async GetWalletOutputs(PublicKey:string, Height:number, Count:number) {
         try {
             // Query relevant blocks for this range

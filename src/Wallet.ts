@@ -1,16 +1,30 @@
 import * as Config from "./config.json";
 import * as http from "./lib/http";
 import * as async from "./lib/async";
-import * as crypto from "./lib/crypto";
+import * as Crypto from "turtlecoin-crypto";
 import { Constants } from "./Constants";
 import { Sqlite } from "./Database";
 import { Logger } from '@overnightjs/logger';
-import { CryptoNote } from 'turtlecoin-utils';
+import { Output, CryptoNote } from 'turtlecoin-utils';
 
-// TODO - Move fetched blocks into an unscanned blocks array so they're ready when last chunk is done scanning
-// TODO - Handle database errors to keep skipping from happening
-// TODO - Map inputs to outputs, based on key image??
+// Output data received from backend
+class OwnedOutput {
+    public TransactionHash:string;
+    public Owner:string; // (Public Spend Key)
+    public Amount:number;
+    public GlobalIndex:number;
+    public TransactionIndex:number; // (Output Index)
+    public PublicEphemeral:string; // (Output Key)
+    public DerivedKey:string; // (Instead of TX PubKey)
+}
 
+// Decrypted output data
+class DecryptedOutput extends OwnedOutput {
+    public PrivateEphemeral:string;
+    public KeyImage:string;
+}
+
+// Wallet scanning class
 class WalletScanner {
     // General variables
     public CryptoUtils:CryptoNote;
@@ -93,6 +107,55 @@ class WalletScanner {
         return Output;
     }
 
+    async ScanTransaction(Transaction:any, PublicSpendKeys:string[]) {
+        // Create a list of outputs
+        let Outputs:OwnedOutput[] = [];
+    
+        // Generate derived key
+        let Derivation = Crypto.generateKeyDerivation(Transaction.publicKey,
+            Config.PrivateViewKey)[1] as string;
+    
+        // Loop through transaction outputs
+        for (let OutputIndex = 0; OutputIndex < Transaction.outputs.length; OutputIndex++) {
+            // Get current output
+            let Output:Output = Transaction.outputs[OutputIndex];
+    
+            // Derive public spend key for this output
+            let DerivedSpendKey = Crypto.underivePublicKey(Derivation, OutputIndex, Output.key)[1] as string;
+    
+            // Check if this output is meant for us
+            if (PublicSpendKeys.includes(DerivedSpendKey)) {
+                Outputs.push({
+                    TransactionHash: Transaction.hash,
+                    Owner: DerivedSpendKey,
+                    Amount: Output.amount,
+                    GlobalIndex: Output.globalIndex,
+                    TransactionIndex: OutputIndex,
+                    PublicEphemeral: Output.key,
+                    DerivedKey: Derivation
+                });
+            }
+        }
+    
+        // Return owned outputs
+        return Outputs;
+    }
+
+    async ConvertOwnedOutput(OwnedOutput:OwnedOutput, PrivateSpendKey:string) {
+        // Derive private ephemeral key from the information we know
+        let PrivateEphemeral:string = Crypto.deriveSecretKey(OwnedOutput.DerivedKey,
+            OwnedOutput.TransactionIndex, PrivateSpendKey)[1] as string;
+    
+        // Generate key image
+        let KeyImage:string = Crypto.generateKeyImage(OwnedOutput.PublicEphemeral, PrivateEphemeral)[1] as string;
+    
+        // Convert and return output object
+        let DecryptedOutput = OwnedOutput as DecryptedOutput;
+        DecryptedOutput.PrivateEphemeral = PrivateEphemeral;
+        DecryptedOutput.KeyImage = KeyImage;
+        return DecryptedOutput;
+    }
+
     async ScanBlock(Block:any) {
         return new Promise(async Resolve => {
             // Only scan this block if there are public keys for this height
@@ -100,7 +163,7 @@ class WalletScanner {
             if (PublicKeys.length !== 0) {
                 // Iterate over transactions transactions
                 Block.transactions.forEach(async (Transaction: any) => {
-                    let Outputs = await crypto.ScanTransaction(Transaction, PublicKeys);
+                    let Outputs = await this.ScanTransaction(Transaction, PublicKeys);
                     if (Outputs.length > 0) {
                         this.Log(Outputs.length + " valid outputs found in tx " + Transaction.hash, "imply");
                         Sqlite.StoreTransaction(Transaction, Block, Outputs);

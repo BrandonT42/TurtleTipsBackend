@@ -1,4 +1,10 @@
 export class Constants {
+// The amount of time to wait between checking for cancellation in each async function (in ms)
+public static CANCELLATION_INTERVAL:number = 100;
+
+// Max amount of time a signature is valid for (in ms)
+public static SIGNATURE_TIME_DELTA:number = 300000;
+
 // Minimum # of confirmations for a transaction to be considered valid
 public static MINIMUM_CONFIRMATIONS:number = 60;
 

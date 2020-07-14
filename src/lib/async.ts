@@ -1,10 +1,9 @@
+import { Constants } from "../Constants";
+
 // Returns a JSON error message
 export function Error(Message:string) {
     return JSON.stringify({Error: Message});
 }
-
-// The amount of time to wait between checking for cancellation in each async function (in ms)
-const CANCELLATION_INTERVAL = 100;
 
 // Async cancellation token
 export class CancellationToken {
@@ -30,7 +29,7 @@ export async function Loop(Callback:Function, Cancel:CancellationToken) {
     await new Promise(Resolve => {
         setInterval(() => {
             if (Cancel.ForceCancelled) Resolve();
-        }, CANCELLATION_INTERVAL);
+        }, Constants.CANCELLATION_INTERVAL);
         let _Loop = async () => {
             if (Cancel.Cancelled === true) Resolve();
             else {
@@ -53,7 +52,7 @@ export async function Sleep(Milliseconds:number, Cancel?:CancellationToken) {
         if (Cancel) {
             setInterval(() => {
                 if (Cancel.Cancelled) Resolve();
-            }, CANCELLATION_INTERVAL);
+            }, Constants.CANCELLATION_INTERVAL);
         }
         setTimeout(Resolve, Milliseconds);
     });
@@ -71,7 +70,7 @@ export async function While(Conditional:Function, Callback:Function, Cancel:Canc
     await new Promise(Resolve => {
         setInterval(() => {
             if (Cancel.ForceCancelled) Resolve();
-        }, CANCELLATION_INTERVAL);
+        }, Constants.CANCELLATION_INTERVAL);
         let _Loop = async () => {
             if (Cancel.Cancelled === true) Resolve();
             else if (await Conditional() !== true) Resolve();
