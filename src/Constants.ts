@@ -31,15 +31,15 @@ public static WALLET_BLOCK_SYNC_MAX:number = 1000;
 
 // Sets up database tables
 public static BLOCK_TABLE = `CREATE TABLE IF NOT EXISTS "block_heights" (
-    "block_hash"	varchar(64) NOT NULL UNIQUE,
-    "height"	bigint NOT NULL UNIQUE,
+    "block_hash"	VARCHAR(64) NOT NULL UNIQUE,
+    "height"	BIGINT NOT NULL UNIQUE,
     PRIMARY KEY("block_hash")
 );`;
 public static TRANSACTIONS_TABLE = `CREATE TABLE IF NOT EXISTS "transactions" (
-    "transaction_hash"	varchar(64) NOT NULL UNIQUE,
-    "block_hash"	varchar(64) NOT NULL,
-    "payment_id"	varchar NOT NULL,
-    "unlock_time"	bigint NOT NULL,
+    "transaction_hash"	VARCHAR(64) NOT NULL UNIQUE,
+    "block_hash"	VARCHAR(64) NOT NULL,
+    "payment_id"	VARCHAR NOT NULL,
+    "unlock_time"	BIGINT NOT NULL,
     PRIMARY KEY("transaction_hash"),
     FOREIGN KEY("block_hash") REFERENCES "block_heights"("block_hash")
 );`;
@@ -55,27 +55,29 @@ public static PUBKEYS_TABLE = `CREATE TABLE IF NOT EXISTS "pubkeys" (
     PRIMARY KEY("pubkey")
 );`;
 public static INPUTS_TABLE = `CREATE TABLE IF NOT EXISTS "inputs" (
-    "transaction_hash"	varchar(64) NOT NULL,
-    "key_image"	varchar(64) NOT NULL UNIQUE,
-    "amount"	bigint NOT NULL,
+    "transaction_hash"	VARCHAR(64) NOT NULL,
+    "block_height"  BIGINT NOT NULL,
+    "key_image"	VARCHAR(64) NOT NULL UNIQUE,
+    "amount"	BIGINT NOT NULL,
     PRIMARY KEY("key_image","transaction_hash"),
-    FOREIGN KEY("transaction_hash") REFERENCES "transactions"("transaction_hash")
+    FOREIGN KEY("transaction_hash") REFERENCES "transactions"("transaction_hash"),
+    FOREIGN KEY("block_height") REFERENCES "block_heights"("height")
 );`;
 public static OUTPUTS_TABLE = `CREATE TABLE IF NOT EXISTS "outputs" (
-    "transaction_hash"	varchar(64) NOT NULL,
-    "pubkey" varchar(64) NOT NULL,
+    "pubkey" VARCHAR(64) NOT NULL,
+    "transaction_hash"	VARCHAR(64) NOT NULL,
     "transaction_index"	INTEGER NOT NULL,
     "global_index"	BIGINT NOT NULL UNIQUE,
-    "amount"	bigint NOT NULL,
-    "public_ephemeral"	varchar(64) NOT NULL,
-    "derivation"	varvhar(64) NOT NULL,
+    "amount"	BIGINT NOT NULL,
+    "public_ephemeral"	VARCHAR(64) NOT NULL,
+    "derivation"	VARCHAR(64) NOT NULL,
     PRIMARY KEY("transaction_hash","transaction_index"),
     FOREIGN KEY("transaction_hash") REFERENCES "transactions"("transaction_hash"),
     FOREIGN KEY("pubkey") REFERENCES "pubkeys"("pubkey")
 );`;
 public static DOMAINS_TABLE = `CREATE TABLE IF NOT EXISTS "domains" (
-    "domain"	varchar NOT NULL UNIQUE,
-    "pubkey"	varchar(64) NOT NULL,
+    "domain"	VARCHAR NOT NULL UNIQUE,
+    "pubkey"	VARCHAR(64) NOT NULL,
     PRIMARY KEY("domain"),
     FOREIGN KEY("pubkey") REFERENCES "pubkeys"("pubkey")
 );`;

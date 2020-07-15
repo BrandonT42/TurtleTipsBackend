@@ -10,18 +10,13 @@ import { Output, CryptoNote } from 'turtlecoin-utils';
 // Output data received from backend
 class OwnedOutput {
     public TransactionHash:string;
-    public Owner:string; // (Public Spend Key)
-    public Amount:number;
-    public GlobalIndex:number;
-    public TransactionIndex:number; // (Output Index)
-    public PublicEphemeral:string; // (Output Key)
-    public DerivedKey:string; // (Instead of TX PubKey)
-}
-
-// Decrypted output data
-class DecryptedOutput extends OwnedOutput {
-    public PrivateEphemeral:string;
-    public KeyImage:string;
+    public Owner:string; // Public Spend Key
+    public Amount:number; // Units
+    public GlobalIndex:number; // Global Index
+    public TransactionIndex:number; // Transaction Output Index
+    public PublicEphemeral:string; // Output Key
+    public DerivedKey:string; // Instead of TX PubKey
+    public UnlockTime:number; // Unlock Height
 }
 
 // Wallet scanning class
@@ -132,28 +127,14 @@ class WalletScanner {
                     GlobalIndex: Output.globalIndex,
                     TransactionIndex: OutputIndex,
                     PublicEphemeral: Output.key,
-                    DerivedKey: Derivation
+                    DerivedKey: Derivation,
+                    UnlockTime: Transaction.unlockTime
                 });
             }
         }
     
         // Return owned outputs
         return Outputs;
-    }
-
-    async ConvertOwnedOutput(OwnedOutput:OwnedOutput, PrivateSpendKey:string) {
-        // Derive private ephemeral key from the information we know
-        let PrivateEphemeral:string = Crypto.deriveSecretKey(OwnedOutput.DerivedKey,
-            OwnedOutput.TransactionIndex, PrivateSpendKey)[1] as string;
-    
-        // Generate key image
-        let KeyImage:string = Crypto.generateKeyImage(OwnedOutput.PublicEphemeral, PrivateEphemeral)[1] as string;
-    
-        // Convert and return output object
-        let DecryptedOutput = OwnedOutput as DecryptedOutput;
-        DecryptedOutput.PrivateEphemeral = PrivateEphemeral;
-        DecryptedOutput.KeyImage = KeyImage;
-        return DecryptedOutput;
     }
 
     async ScanBlock(Block:any) {

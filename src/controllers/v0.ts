@@ -99,7 +99,7 @@ class v0 {
             let RawTransaction:string = Request.body["transaction"];
             console.log(RawTransaction);
             Logger.Imp("Received raw transaction.");
-            http.Post("/transaction", {
+            http.Post("/sendrawtransaction", {
                 tx_as_hex: RawTransaction
             }).then(Success => {console.log(Success)},
             Failure => console.log(Failure));

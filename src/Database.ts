@@ -6,7 +6,11 @@ import { Logger } from "@overnightjs/logger";
 import { Constants } from "./Constants";
 
 // Sqlite database connection
-const DB = new Database(Config.Database);
+const DB = new Database(Config.Database, {
+    memory: false,
+    readonly: false,
+    fileMustExist: false
+});
 
 // Executes an SQL string without variables
 function Exec(Sql:string) {
@@ -158,7 +162,8 @@ export class Sqlite {
             InputValues.push({
                 transaction_hash: Transaction.hash,
                 key_image: Input.keyImage,
-                amount: Input.amount
+                amount: Input.amount,
+                block_height: Block.height
             });
         })
         Insert(
@@ -169,10 +174,21 @@ export class Sqlite {
         // Store outputs
         let OutputValues = [];
         Outputs.forEach(Output => {
-            OutputValues.push({
-                transaction_hash: Transaction.hash,
+            console.log({
                 pubkey: Output.Owner,
+                transaction_hash: Transaction.hash,
                 transaction_index: Output.TransactionIndex,
+                unlock_time: Transaction.unlockTime,
+                global_index: Output.GlobalIndex,
+                amount: Output.Amount,
+                public_ephemeral: Output.PublicEphemeral,
+                derivation: Output.DerivedKey
+            });
+            OutputValues.push({
+                pubkey: Output.Owner,
+                transaction_hash: Transaction.hash,
+                transaction_index: Output.TransactionIndex,
+                unlock_time: Transaction.unlockTime,
                 global_index: Output.GlobalIndex,
                 amount: Output.Amount,
                 public_ephemeral: Output.PublicEphemeral,

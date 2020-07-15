@@ -1,4 +1,4 @@
 dist
 node_modules
-database.sqlite
-database.sqlite-journal
+*.sqlite
+*.sqlite-journal

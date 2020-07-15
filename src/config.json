@@ -4,7 +4,7 @@
     "BlockApiHost": "blockapi.turtlepay.io",
     "BlockApiPort": 443,
     "Https": true,
-    "SyncHeight": 2200000,
+    "SyncHeight": 2715430,
     "BlockCacheLimit": 5000,
     "Database": "database.sqlite",
     "TxtRecord": "turtletips"
