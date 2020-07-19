@@ -40,7 +40,7 @@ public static TRANSACTIONS_TABLE = `CREATE TABLE IF NOT EXISTS "transactions" (
     "block_hash"	VARCHAR(64) NOT NULL,
     "payment_id"	VARCHAR NOT NULL,
     "unlock_time"	BIGINT NOT NULL,
-    PRIMARY KEY("transaction_hash"),
+    PRIMARY KEY("transaction_hash","unlock_time"),
     FOREIGN KEY("block_hash") REFERENCES "block_heights"("block_hash")
 );`;
 public static SYNC_TABLE = `CREATE TABLE IF NOT EXISTS "sync" (
@@ -71,8 +71,9 @@ public static OUTPUTS_TABLE = `CREATE TABLE IF NOT EXISTS "outputs" (
     "amount"	BIGINT NOT NULL,
     "public_ephemeral"	VARCHAR(64) NOT NULL,
     "derivation"	VARCHAR(64) NOT NULL,
+    "unlock_time"	BIGINT,
     PRIMARY KEY("transaction_hash","transaction_index"),
-    FOREIGN KEY("transaction_hash") REFERENCES "transactions"("transaction_hash"),
+    FOREIGN KEY("transaction_hash","unlock_time") REFERENCES "transactions"("transaction_hash","unlock_time"),
     FOREIGN KEY("pubkey") REFERENCES "pubkeys"("pubkey")
 );`;
 public static DOMAINS_TABLE = `CREATE TABLE IF NOT EXISTS "domains" (

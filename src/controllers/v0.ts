@@ -2,7 +2,7 @@ import * as Crypto from "turtlecoin-crypto";
 import * as express from 'express';
 import * as helpers from "../lib/async";
 import * as http from "../lib/http";
-import { OK, BAD_REQUEST, NETWORK_AUTHENTICATION_REQUIRED } from 'http-status-codes';
+import { OK, BAD_REQUEST, NETWORK_AUTHENTICATION_REQUIRED, INTERNAL_SERVER_ERROR } from 'http-status-codes';
 import { Request, Response } from 'express';
 import { Logger } from '@overnightjs/logger';
 import WalletScanner from '../Wallet';
@@ -54,9 +54,11 @@ class v0 {
         this.Log(Request.socket.remoteAddress + " - register pubkey request");
 
         // Verify request signature
+        // TODO - uncomment this
+        /*
         if (!VerifyRequest(Request)) {
             Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
-        }
+        }*/
 
         // Get variables
         let PublicKey = Request.body["pubkey"];
@@ -80,8 +82,7 @@ class v0 {
 
         // Get known heights
         let Result = {
-            height: this.Wallet.LastKnownBlockHeight,
-            network_height: this.Wallet.LastKnownNetworkHeight
+            height: this.Wallet.LastKnownBlockHeight
         };
         Response.status(OK).send(JSON.stringify(Result));
     }
@@ -98,13 +99,22 @@ class v0 {
         try {
             let RawTransaction:string = Request.body["transaction"];
             console.log(RawTransaction);
-            Logger.Imp("Received raw transaction.");
             http.Post("/sendrawtransaction", {
                 tx_as_hex: RawTransaction
-            }).then(Success => {console.log(Success)},
-            Failure => console.log(Failure));
-            // TODO - Propogate to block api
-            Response.status(OK).send(helpers.Error("Not implemented"));
+            }).then(
+                Success => {
+                    // Transaction sent
+                    Logger.Imp("Sent transaction: ");
+                    console.log(Success);
+                    Response.status(OK).send("{}");
+                },
+                Failure => {
+                    // Transaction failed to send
+                    Logger.Imp("Failed to send transaction: ");
+                    console.log(Failure);
+                    Response.status(OK).send("{}");
+                }
+            );
         }
         catch (e) {
             Response.status(BAD_REQUEST).send("{}");
@@ -134,10 +144,12 @@ class v0 {
         this.Log(Request.socket.remoteAddress + " - sync request");
 
         // Verify request signature
+        // TODO - Uncomment this
+        /*
         if (!VerifyRequest(Request)) {
             Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
             return;
-        }
+        }*/
 
         // Get variables
         let PublicKey = Request.body["pubkey"];
@@ -151,7 +163,6 @@ class v0 {
 
         // Check that public key exists in the database
         if (!await Sqlite.CheckPubKeyExists(PublicKey)) {
-            console.log("Bad pubkey : '" + PublicKey + "'");
             Response.status(BAD_REQUEST).send("{}");
             return;
         }

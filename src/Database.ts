@@ -174,16 +174,6 @@ export class Sqlite {
         // Store outputs
         let OutputValues = [];
         Outputs.forEach(Output => {
-            console.log({
-                pubkey: Output.Owner,
-                transaction_hash: Transaction.hash,
-                transaction_index: Output.TransactionIndex,
-                unlock_time: Transaction.unlockTime,
-                global_index: Output.GlobalIndex,
-                amount: Output.Amount,
-                public_ephemeral: Output.PublicEphemeral,
-                derivation: Output.DerivedKey
-            });
             OutputValues.push({
                 pubkey: Output.Owner,
                 transaction_hash: Transaction.hash,
