@@ -44,10 +44,22 @@ class v0 {
 
         // Assign routes
         App.get(Prefix + "/height", (Request, Response) => this.GetHeight(Request, Response));
+        App.get(Prefix + "/hosts", (Request, Response) => this.GetHosts(Request, Response));
         App.post(Prefix + "/send", (Request, Response) => this.SendTransaction(Request, Response));
         App.post(Prefix + "/register", (Request, Response) => this.RegisterPubKey(Request, Response));
         App.post(Prefix + "/tip", (Request, Response) => this.RequestTip(Request, Response));
         App.post(Prefix + "/sync", (Request, Response) => this.RequestSync(Request, Response));
+    }
+
+    public static async GetHosts(Request:Request, Response:Response) {
+        this.Log(Request.socket.remoteAddress + " - hosts request");
+
+        // Get hosts list
+        let Hosts = await Sqlite.GetHosts();
+        let Result = {
+            hosts: Hosts
+        }
+        Response.status(OK).send(JSON.stringify(Result));
     }
 
     public static async RegisterPubKey(Request:Request, Response:Response) {
@@ -144,7 +156,7 @@ class v0 {
         this.Log(Request.socket.remoteAddress + " - sync request");
 
         // Verify request signature
-        // TODO - Uncomment this
+        // TODO - Uncomment this after figuring out why it broke
         /*
         if (!VerifyRequest(Request)) {
             Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");

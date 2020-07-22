@@ -76,10 +76,10 @@ public static OUTPUTS_TABLE = `CREATE TABLE IF NOT EXISTS "outputs" (
     FOREIGN KEY("transaction_hash","unlock_time") REFERENCES "transactions"("transaction_hash","unlock_time"),
     FOREIGN KEY("pubkey") REFERENCES "pubkeys"("pubkey")
 );`;
-public static DOMAINS_TABLE = `CREATE TABLE IF NOT EXISTS "domains" (
-    "domain"	VARCHAR NOT NULL UNIQUE,
+public static HOSTS_TABLE = `CREATE TABLE IF NOT EXISTS "hosts" (
+    "host"	VARCHAR NOT NULL UNIQUE,
     "pubkey"	VARCHAR(64) NOT NULL,
-    PRIMARY KEY("domain"),
+    PRIMARY KEY("host"),
     FOREIGN KEY("pubkey") REFERENCES "pubkeys"("pubkey")
 );`;
 }

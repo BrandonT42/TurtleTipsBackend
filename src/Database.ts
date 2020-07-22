@@ -85,7 +85,7 @@ export class Sqlite {
     public static async Setup() {
         // Create tables
         Exec(Constants.BLOCK_TABLE);
-        Exec(Constants.DOMAINS_TABLE);
+        Exec(Constants.HOSTS_TABLE);
         Exec(Constants.INPUTS_TABLE);
         Exec(Constants.OUTPUTS_TABLE);
         Exec(Constants.PUBKEYS_TABLE);
@@ -211,9 +211,9 @@ export class Sqlite {
         //   or domain is already registered
         try {
             Replace(
-                "domains",
+                "hosts",
                 {
-                    domain: Domain,
+                    host: Domain,
                     pubkey: PublicKey
                 }
             );
@@ -222,6 +222,13 @@ export class Sqlite {
         catch {
             return false;
         }
+    }
+
+    // Gets all stored hosts
+    public static async GetHosts() {
+        return DB
+            .prepare("SELECT host, pubkey FROM hosts")
+            .all();
     }
 
     // Gets data from last sync
@@ -281,7 +288,7 @@ export class Sqlite {
             // Throws if there isn't a matching record
             try {
                 let DomainInfo = DB
-                    .prepare("SELECT * FROM domains WHERE domain = ?")
+                    .prepare("SELECT * FROM hosts WHERE host = ?")
                     .get([ Domain ]);
                 Resolve(DomainInfo.pubkey);
             }
