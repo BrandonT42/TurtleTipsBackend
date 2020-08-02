@@ -167,12 +167,12 @@ export async function StoreSyncData(LastKnownBlockHeight:number, LastCheckpointH
 }
 
 // Stores or replaces a domain owner's pubkey
-export async function StoreHostKey(Domain:string, PublicKey:string):Promise<boolean> {
+export async function StoreHostKey(Host:string, PublicKey:string):Promise<boolean> {
     try {
         Replace(
             "hosts",
             {
-                host: Domain,
+                host: Host,
                 pubkey: PublicKey
             }
         );
@@ -214,13 +214,13 @@ export async function GetPubKeys(Height:number):Promise<string[]> {
 }
 
 // Gets the pubkey belonging to a domain
-export async function GetHostKey(Domain:string):Promise<string> {
+export async function GetHostKey(Host:string):Promise<string> {
     return new Promise(async Resolve => {
         // Throws if there isn't a matching record
         try {
             let DomainInfo = DB()
                 .prepare("SELECT * FROM hosts WHERE host = ?")
-                .get([ Domain ]);
+                .get([ Host ]);
             Resolve(DomainInfo.pubkey);
         }
         catch {

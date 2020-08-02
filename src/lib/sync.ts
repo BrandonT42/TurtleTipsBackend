@@ -168,7 +168,7 @@ async function GetBlocks() {
 
     // Get blocks from network
     let Blocks = await Network.GetBlocks(SyncData);
-    if (!Blocks) return Blocks;
+    if (!Blocks) return undefined;
 
     // Sort blocks by height and return result
     return Blocks.sort((a, b) => {

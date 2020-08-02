@@ -4,7 +4,6 @@ import { Server } from "@overnightjs/core";
 import { Log, LogLevel } from "./logger";
 import * as Constants from "./constants";
 import * as TurtleCoin from "./turtlecoin";
-import { StringToHex, Hash } from "./utils";
 import { Request, Response } from "express";
 import * as Config from "../config.json";
 import { OK } from "http-status-codes";
@@ -52,8 +51,6 @@ export async function VerifyRequest(Request:Request) {
     let RequestBody = Request.rawTrailers.pop() ?? "{}";
     let Seed = RequestDate + RequestBody + Request.url;
     if (Seed.endsWith("?")) Seed = Seed.substr(0, Seed.length - 1);
-    Seed = StringToHex(Seed);
-    Seed = Hash(Seed);
 
     // Verify signature
     try {
@@ -73,8 +70,6 @@ export async function Respond(Request:Request, Response:Response, Payload:string
     // Create a seed for us to sign
     let Seed = ResponseDate + Payload + Request.protocol + "://" + Request.hostname + ":" + Config.ApiPort + Request.url;
     if (Seed.endsWith("?")) Seed = Seed.substr(0, Seed.length - 1);
-    Seed = StringToHex(Seed);
-    Seed = Hash(Seed);
 
     // Generate signature and convert it to base64
     let Signature = await TurtleCoin.Utils.signMessage(Seed, Config.PrivateViewKey);
@@ -87,12 +82,9 @@ export async function Respond(Request:Request, Response:Response, Payload:string
     Response.setHeader("X-Request-Auth", Authorization);
     Response.setHeader("X-Hello-From", "TurtleTips ;)");
 
-    // Set status
+    // Set status and deliver payload
     const Status = StatusCode ?? OK;
-    Response.status(Status);
-    
-    // Write payload
-    Response.send(Payload);
+    Response.status(Status).send(Payload);
 }
 
 // Initializes api server and hooks api controllers

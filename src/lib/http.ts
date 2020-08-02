@@ -4,7 +4,6 @@ import * as TurtleCoin from "./turtlecoin";
 import * as QueryString from "querystring";
 import * as Constants from "./constants";
 import { KeyPair } from "turtlecoin-utils";
-import { StringToHex, Hash } from "./utils";
 import { Response } from "./types";
 
 // Handles HTTP API requests
@@ -23,8 +22,7 @@ export class Http {
     // Sign an HTTP/S request
     private async SignRequest(Date:string, Payload:string, Path:string, Keys:KeyPair):Promise<string> {
         // Create a seed for us to sign
-        let Seed = StringToHex(Date + Payload + Path);
-        Seed = Hash(Seed);
+        let Seed = Date + Payload + Path;
 
         // Generate signature and convert it to base64
         let Signature = await TurtleCoin.Utils.signMessage(Seed, Keys.privateKey);
@@ -37,49 +35,47 @@ export class Http {
 
     // Verify the signature of an HTTP/S response
     private async VerifyResponse(Response:http.IncomingMessage, RequestBody:string):Promise<boolean> {
+        // Verify date header and time delta
+        if (!Response.headers["x-request-date"]) return false;
+        const RequestDate = Response.headers["x-request-date"] as string;
+        const Timestamp = Date.now();
+        const ForeignTimestamp = Date.parse(RequestDate);
+        if (Timestamp - ForeignTimestamp > Constants.SIGNATURE_TIME_DELTA) return false;
+
+        // Verify authentication header
+        if (!Response.headers["x-request-auth"]) return false;
+        const Authentication = Response.headers["x-request-auth"] as string;
+
+        // Verify algorithm type exists and is ed25519
+        let Index = Authentication.indexOf(`algorithm="`);
+        if (Index < 0) return;
+        Index += `algorithm="`.length;
+        const Algorithm = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
+        if (Algorithm.toLowerCase() !== "ed25519") return false;
+
+        // Verify public key exists and is valid
+        Index = Authentication.indexOf(`keyId="`);
+        if (Index < 0) return;
+        Index += `keyId="`.length;
+        const PublicKey = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
+        if (!TurtleCoin.Crypto.checkKey(PublicKey)) return false;
+
+        // Verify signature exists
+        Index = Authentication.indexOf(`signature="`);
+        if (Index < 0) return;
+        Index += `signature="`.length;
+        let Signature = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
+        let SignatureBuffer = Buffer.from(Signature, "base64");
+        Signature = SignatureBuffer.toString();
+
+        // Create seed hash
+        let Seed = RequestDate + RequestBody + Response.url;
+        if (Seed.endsWith("?")) Seed = Seed.substr(0, Seed.length - 1);
+
+        // Verify signature
         try {
-            // Verify date header and time delta
-            if (!Response.headers["X-Request-Date"]) return false;
-            const RequestDate = Response.headers["X-Request-Date"] as string;
-            const Timestamp = Date.now();
-            const ForeignTimestamp = Date.parse(RequestDate);
-            if (Timestamp - ForeignTimestamp > Constants.SIGNATURE_TIME_DELTA) return false;
-
-            // Verify authentication header
-            if (!Response.headers["X-Request-Auth"]) return false;
-            const Authentication = Response.headers["X-Request-Auth"] as string;
-
-            // Verify algorithm type exists and is ed25519
-            let Index = Authentication.indexOf(`algorithm="`);
-            if (Index < 0) return;
-            Index += `algorithm="`.length;
-            const Algorithm = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
-            if (Algorithm.toLowerCase() !== "ed25519") return false;
-
-            // Verify public key exists and is valid
-            Index = Authentication.indexOf(`keyId="`);
-            if (Index < 0) return;
-            Index += `keyId="`.length;
-            const PublicKey = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
-            if (!TurtleCoin.Crypto.checkKey(PublicKey)) return false;
-
-            // Verify signature exists
-            Index = Authentication.indexOf(`signature="`);
-            if (Index < 0) return;
-            Index += `signature="`.length;
-            let Signature = Authentication.substr(Index, Authentication.indexOf(`"`, Index) - Index);
-            let SignatureBuffer = Buffer.from(Signature, "base64");
-            Signature = SignatureBuffer.toString();
-    
-            // Create seed hash
-            let Seed = "";
-            Seed += StringToHex(RequestDate);
-            Seed += StringToHex(RequestBody);
-            Seed += StringToHex(Response.headers.host + Response.url);
-            let RequestHash = Hash(Seed);
-    
-            // Verify signature
-            return TurtleCoin.Crypto.checkSignature(RequestHash, PublicKey, Signature);
+            await TurtleCoin.Utils.verifyMessageSignature(Seed, PublicKey, Signature);
+            return true;
         }
         catch {
             return false;

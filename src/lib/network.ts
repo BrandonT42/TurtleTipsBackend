@@ -19,8 +19,7 @@ export async function Init(CancellationToken:Async.CancellationToken) {
     Async.Loop(async () => {
         // Request height from daemon
         let Response = await Daemon.Get(Constants.DAEMON_API.HEIGHT);
-        if (Response
-            && Response.Value.network_height) {
+        if (Response && Response.Value.network_height) {
             Height = Response.Value.network_height;
             Connected = true;
         }
@@ -31,6 +30,9 @@ export async function Init(CancellationToken:Async.CancellationToken) {
 
 // Gets a list of sync blocks from block api
 export async function GetBlocks(Params:any):Promise<SyncBlock[]> {
-    let Blocks = await Daemon.Post("/sync", Params);
-    return Blocks.Value;
+    let Response = await Daemon.Post("/sync", Params);
+    if (Response && Response.Value) {
+        return Response.Value;
+    }
+    else return undefined;
 }
