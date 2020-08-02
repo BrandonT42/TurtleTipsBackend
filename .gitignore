@@ -1,4 +1,5 @@
 dist
 node_modules
-*.sqlite
-*.sqlite-journal
+db
+db-wal
+db-shm
