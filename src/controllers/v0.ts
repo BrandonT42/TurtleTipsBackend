@@ -1,167 +1,96 @@
-import * as Crypto from "turtlecoin-crypto";
-import * as express from 'express';
-import * as helpers from "../lib/async";
-import * as http from "../lib/http";
-import { OK, BAD_REQUEST, NETWORK_AUTHENTICATION_REQUIRED, INTERNAL_SERVER_ERROR } from 'http-status-codes';
-import { Request, Response } from 'express';
-import { Logger } from '@overnightjs/logger';
-import WalletScanner from '../Wallet';
-import { Sqlite } from "../Database";
-import { VerifyRequest } from "../lib/crypto";
-import { Constants } from "../Constants";
+import * as express from "express";
+import { OK, BAD_REQUEST, NETWORK_AUTHENTICATION_REQUIRED } from "http-status-codes";
+import { Request, Response } from "express";
+import { Log, LogLevel } from "../lib/logger";
+import * as Constants from "../lib/constants";
+import * as Database from "../lib/database";
+import * as TurtleCoin from "../lib/turtlecoin";
+import * as Network from "../lib/network";
+import * as Sync from "../lib/sync";
+import { VerifyRequest, Respond } from "../lib/apiserver";
 
 // Api controller prefix
 const Prefix:string = "/api/v0";
 
 class v0 {
-    // General variables
-    private static declare Wallet:WalletScanner;
-
-    // Logs a message to the console
-    private static async Log(Message:any, Level?:string) {
-        let LogMessage = "[v0] " + Message;
-        let LogLevel = Level ?? "info";
-        switch (LogLevel.toLowerCase()) {
-            case "warning":
-                Logger.Warn(LogMessage);
-                break;
-            case "error":
-                Logger.Err(LogMessage);
-                break;
-            case "imply":
-                Logger.Imp(LogMessage);
-                break;
-            default:
-                Logger.Info(LogMessage);
-                break;
-        }
-    }
-
     // Initializes the controller and assigns routes
-    public static Init(App:express.Application, Wallet:WalletScanner) {
-        // Assign wallet reference 
-        this.Wallet = Wallet;
-
+    public static Init(App:express.Application) {
         // Assign routes
-        App.get(Prefix + "/height", (Request, Response) => this.GetHeight(Request, Response));
         App.get(Prefix + "/hosts", (Request, Response) => this.GetHosts(Request, Response));
-        App.post(Prefix + "/send", (Request, Response) => this.SendTransaction(Request, Response));
+        App.get(Prefix + "/height", (Request, Response) => this.GetHeight(Request, Response));
         App.post(Prefix + "/register", (Request, Response) => this.RegisterPubKey(Request, Response));
-        App.post(Prefix + "/tip", (Request, Response) => this.RequestTip(Request, Response));
         App.post(Prefix + "/sync", (Request, Response) => this.RequestSync(Request, Response));
     }
 
+    // Gets all known and registered hosts
     public static async GetHosts(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - hosts request");
+        Log(Request.socket.remoteAddress + " - hosts request", LogLevel.Debug);
 
         // Get hosts list
-        let Hosts = await Sqlite.GetHosts();
+        let Hosts = await Database.GetHosts();
         let Result = {
             hosts: Hosts
         }
-        Response.status(OK).send(JSON.stringify(Result));
+        Respond(Request, Response, JSON.stringify(Result), OK);
     }
 
-    public static async RegisterPubKey(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - register pubkey request");
+    // Gets the backend's current height information
+    public static async GetHeight(Request:Request, Response:Response) {
+        Log(Request.socket.remoteAddress + " - height request", LogLevel.Debug);
 
         // Verify request signature
-        // TODO - uncomment this
-        /*
         if (!VerifyRequest(Request)) {
-            Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
-        }*/
+            Log(Request.socket.remoteAddress + " made an unverifiable request", LogLevel.Warning);
+            Respond(Request, Response, "{}", NETWORK_AUTHENTICATION_REQUIRED);
+            return;
+        }
+
+        // Get known heights
+        let Result = {
+            height: Sync.Height
+        };
+        Respond(Request, Response, JSON.stringify(Result), OK);
+    }
+
+    // Registers a public key to the database
+    public static async RegisterPubKey(Request:Request, Response:Response) {
+        Log(Request.socket.remoteAddress + " - register pubkey request", LogLevel.Debug);
+
+        // Verify request signature
+        if (!VerifyRequest(Request)) {
+            Log(Request.socket.remoteAddress + " made an unverifiable request", LogLevel.Warning);
+            Respond(Request, Response, "{}", NETWORK_AUTHENTICATION_REQUIRED);
+            return;
+        }
 
         // Get variables
         let PublicKey = Request.body["pubkey"];
-        let NetworkHeight = this.Wallet.LastKnownNetworkHeight;
 
         // Verify public key is a valid key
-        if (Crypto.checkKey(PublicKey) === false) {
-            Response.status(BAD_REQUEST).send(helpers.Error("Invalid public key"));
+        if (TurtleCoin.Crypto.checkKey(PublicKey) === false) {
+            Respond(Request, Response, JSON.stringify({
+                Error: "Invalid public key"
+            }), BAD_REQUEST);
             return;
         }
 
         // Try to add to database
-        let Success = await Sqlite.StorePubKey(PublicKey, NetworkHeight);
-        Response.status(OK).send(JSON.stringify({
+        let Success = await Database.StorePubKey(PublicKey, Network.Height);
+        Respond(Request, Response, JSON.stringify({
             Success: Success
-        }));
+        }), OK);
     }
 
-    public static async GetHeight(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - height request");
-
-        // Get known heights
-        let Result = {
-            height: this.Wallet.LastKnownBlockHeight
-        };
-        Response.status(OK).send(JSON.stringify(Result));
-    }
-
-    public static async SendTransaction(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - send transaction request");
-
-        // Verify request signature
-        if (!VerifyRequest(Request)) {
-            Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
-            return;
-        }
-        
-        try {
-            let RawTransaction:string = Request.body["transaction"];
-            console.log(RawTransaction);
-            http.Post("/sendrawtransaction", {
-                tx_as_hex: RawTransaction
-            }).then(
-                Success => {
-                    // Transaction sent
-                    Logger.Imp("Sent transaction: ");
-                    console.log(Success);
-                    Response.status(OK).send("{}");
-                },
-                Failure => {
-                    // Transaction failed to send
-                    Logger.Imp("Failed to send transaction: ");
-                    console.log(Failure);
-                    Response.status(OK).send("{}");
-                }
-            );
-        }
-        catch (e) {
-            Response.status(BAD_REQUEST).send("{}");
-        }
-    }
-
-    public static async RequestTip(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - tip request");
-
-        // Verify request signature
-        if (!VerifyRequest(Request)) {
-            Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
-            return;
-        }
-
-        // Query database and respond
-        let Owner = await Sqlite.GetDomainOwner(Request.body["domain"]);
-        if (Owner !== undefined) {
-            Response.status(OK).send(JSON.stringify({
-                pubkey: Owner
-            }));
-        }
-        else Response.status(OK).send("{}");
-    }
-
+    // Requests wallet sync data for a specific range
     public static async RequestSync(Request:Request, Response:Response) {
-        this.Log(Request.socket.remoteAddress + " - sync request");
+        Log(Request.socket.remoteAddress + " - sync request", LogLevel.Debug);
 
         // Verify request signature
-        // TODO - Uncomment this after figuring out why it broke
-        /*
         if (!VerifyRequest(Request)) {
-            Response.status(NETWORK_AUTHENTICATION_REQUIRED).send("{}");
+            Log(Request.socket.remoteAddress + " made an unverifiable request", LogLevel.Warning);
+            Respond(Request, Response, "{}", NETWORK_AUTHENTICATION_REQUIRED);
             return;
-        }*/
+        }
 
         // Get variables
         let PublicKey = Request.body["pubkey"];
@@ -174,15 +103,15 @@ class v0 {
         }
 
         // Check that public key exists in the database
-        if (!await Sqlite.CheckPubKeyExists(PublicKey)) {
+        if (!await Database.CheckPubKeyExists(PublicKey)) {
             Response.status(BAD_REQUEST).send("{}");
+            Respond(Request, Response, "{}", BAD_REQUEST);
             return;
         }
 
         // Query database
-        let SyncData = await Sqlite.GetWalletOutputs(PublicKey, Height, Count);
-        Response.status(OK).send(JSON.stringify(SyncData));
+        let SyncData = await Database.GetWalletOutputs(PublicKey, Height, Count);
+        Respond(Request, Response, JSON.stringify(SyncData), OK);
     }
 }
-
 export default v0;

@@ -1,46 +1,40 @@
 {
-  "name": "trtl-tips-backend",
+  "name": "turtletips_backend",
   "version": "0.0.1",
-  "description": "TurtleTips Backend",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/BrandonT42/TurtleTipsBackend.git"
-  },
-  "main": "index.js",
+  "description": "Backend for TurtleTips wallet service",
+  "main": "index.ts",
   "scripts": {
-    "clean": "rm -rf \"./dist\" || true && mkdir \"./dist\"",
-    "prewatch": "npm run clean",
-    "watch": "NODE_ENV=development webpack --config webpack.config.js -w && nodemon --config \"./util/nodemon.json\"/",
+    "clean": "rm -rf \"dist\" || true; cpy \"src/migrations/*\" \"dist/migrations\"",
+    "build": "tsc",
     "prebuild": "npm run clean",
-    "build": "NODE_ENV=production webpack --config webpack.config.js"
+    "start:dev": "nodemon",
+    "start:prod": "npm run build && node dist/index.js"
   },
-  "keywords": [],
-  "author": "Canti",
-  "license": "AGPL-3.0-only",
-  "devDependencies": {
-    "@types/node": "^13.1.4",
-    "awesome-typescript-loader": "^5.2.1",
-    "nodemon": "^2.0.2",
-    "nodemon-webpack-plugin": "^4.2.2",
-    "npm-run-all": "^4.1.5",
-    "ts-node": "^8.5.4",
-    "tslint": "^5.20.1",
-    "typescript": "^3.7.4",
-    "webpack-node-externals": "^1.7.2"
-  },
+  "keywords": [
+    "TurtleCoin",
+    "TurtleTips",
+    "Crypto",
+    "Currency"
+  ],
+  "author": "Canti (TurtleCoin Developers)",
+  "license": "AGPL-3.0",
   "dependencies": {
-    "@overnightjs/core": "^1.6.11",
-    "@overnightjs/logger": "^1.1.9",
+    "@overnightjs/core": "^1.7.4",
     "@types/better-sqlite3": "^5.4.0",
-    "@types/express": "^4.17.2",
-    "async": "^3.1.0",
-    "better-sqlite3": "^5.4.3",
-    "better-sqlite3-helper": "^2.1.2",
-    "http-signature": "^1.3.1",
+    "@types/express": "^4.17.7",
+    "better-sqlite3": "^7.1.0",
+    "better-sqlite3-helper": "^3.1.0",
+    "cpy-cli": "^3.1.1",
+    "crypto-js": "^4.0.0",
+    "http-signature": "^1.3.4",
     "http-status-codes": "^1.4.0",
-    "turtlecoin-crypto": "^3.1.3",
-    "turtlecoin-utils": "^1.0.19",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "turtlecoin-utils": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.26",
+    "nodemon": "^2.0.4",
+    "rimraf": "^3.0.2",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
   }
 }

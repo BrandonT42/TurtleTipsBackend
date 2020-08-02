@@ -1,12 +1,12 @@
 {
     "Database": "./db",
     "LogLevel": 5,
-    "PrivateViewKey": "599d4b461690b63bbe213e1c95a06f08d2bfba47a69b6d696a7f13b07db3780e",
-    "PublicViewKey": "4ec5f8f1e99a99488509190f597d48cee7cd91b56e24d6481ea91d1b1406502f",
+    "PrivateViewKey": "",
+    "PublicViewKey": "",
     "DaemonHost": "blockapi.turtlepay.io",
     "DaemonPort": 443,
     "DaemonHttps": true,
-    "SyncHeight": 2715430,
+    "SyncHeight": 1,
     "BlockCacheLimit": 5000,
     "TxtRecord": "turtletips",
     "ApiPort": 3000

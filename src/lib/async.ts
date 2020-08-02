@@ -1,9 +1,5 @@
-import { Constants } from "../Constants";
-
-// Returns a JSON error message
-export function Error(Message:string) {
-    return JSON.stringify({Error: Message});
-}
+// The amount of time to wait between checking for cancellation in an async function (in ms)
+const CANCELLATION_INTERVAL = 100;
 
 // Async cancellation token
 export class CancellationToken {
@@ -18,18 +14,12 @@ export class CancellationToken {
     }
 }
 
-/**
- * Performs a loop until cancelled
- * 
- * @param Callback          An async function to perform in a loop
- * @param Cancel            This function's cancellation token
- * @param DoNotInterrupt    If this is set, looped function must finish before cancellation
- */
+// Performs a loop until cancelled
 export async function Loop(Callback:Function, Cancel:CancellationToken) {
     await new Promise(Resolve => {
         setInterval(() => {
             if (Cancel.ForceCancelled) Resolve();
-        }, Constants.CANCELLATION_INTERVAL);
+        }, CANCELLATION_INTERVAL);
         let _Loop = async () => {
             if (Cancel.Cancelled === true) Resolve();
             else {
@@ -41,36 +31,24 @@ export async function Loop(Callback:Function, Cancel:CancellationToken) {
     });
 }
 
-/**
- * Allows an asynchronous function to sleep for a specified amount of time
- * 
- * @param Milliseconds  An async function to perform in a loop
- * @param Cancel        This function's cancellation token
- */
+// Allows an asynchronous function to sleep for a specified amount of time
 export async function Sleep(Milliseconds:number, Cancel?:CancellationToken) {
     await new Promise(Resolve => {
         if (Cancel) {
             setInterval(() => {
                 if (Cancel.Cancelled) Resolve();
-            }, Constants.CANCELLATION_INTERVAL);
+            }, CANCELLATION_INTERVAL);
         }
         setTimeout(Resolve, Milliseconds);
     });
 }
 
-/**
- * Performs a loop until a conditional returns false or until cancelled
- * 
- * @param Conditional       A conditional that must return true to perform the loop
- * @param Callback          An async function to perform in a loop
- * @param Cancel            This function's cancellation token
- * @param DoNotInterrupt    If this is set, looped function must finish before cancellation
- */
+// Performs a loop until a conditional returns false or until cancelled
 export async function While(Conditional:Function, Callback:Function, Cancel:CancellationToken) {
     await new Promise(Resolve => {
         setInterval(() => {
             if (Cancel.ForceCancelled) Resolve();
-        }, Constants.CANCELLATION_INTERVAL);
+        }, CANCELLATION_INTERVAL);
         let _Loop = async () => {
             if (Cancel.Cancelled === true) Resolve();
             else if (await Conditional() !== true) Resolve();

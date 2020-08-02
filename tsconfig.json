@@ -1,17 +1,16 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-      "target": "es6",
-      "module": "commonjs",
-      "sourceMap": false,
-      "types": ["node"],
-      "typeRoots": ["node_modules/@types"],
-      "moduleResolution": "node",
-      "lib": ["es2017","dom"],
-      "resolveJsonModule": true,
-      "outDir": "dist",
-      "esModuleInterop": true
+        "target": "ES2018",
+        "module": "commonjs",
+        "sourceMap": false,
+        "types": ["node"],
+        "typeRoots": ["node_modules/@types"],
+        "moduleResolution": "node",
+        "lib": ["es2020"],
+        "resolveJsonModule": true,
+        "outDir": "dist",
+        "allowSyntheticDefaultImports": true
     },
-    "include": ["./src/**/*.ts"],
-    "exclude": ["./src/**/*.test.ts","./src/public/"]
-  }
+    "include": ["src/", "src/lib/", "src/migrations/"]
+}
